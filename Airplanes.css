@@ -1,0 +1,66 @@
+body {
+    display: grid;
+    justify-content: center;
+    align-items: center;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 5fr 1fr;
+}
+
+h1 {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+    justify-self: center;
+}
+
+.area {
+    grid-row: 2;
+    grid-column: 2;
+    width: 600px;
+    height: 600px;
+    border-collapse: collapse;
+    border: solid black thin;
+    background-color: blue;
+    align-self: center;
+    justify-self: center;
+}
+
+.score {
+    display: flex;
+    grid-row: 2;
+    grid-column: 3;
+    width: 100px;
+    height: 100px;
+    border: solid black thin;
+    background-color: gray;
+    align-self: flex-end;
+    justify-self: flex-start;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    font-size: x-large;
+    font-weight: bold;
+}
+
+.timer {
+    display: flex;
+    grid-row: 3;
+    grid-column: 2;
+    align-items: center;
+    justify-content: center;
+    align-self: self-start;
+    font-size: x-large;
+    font-weight: bold;
+    margin-top: 1%;
+}
+
+.clock {
+    width: 6%;
+    height: 6%;
+    justify-self: center;
+    margin-right: 2%;;
+}
+
+td {
+    white-space: nowrap;
+}
