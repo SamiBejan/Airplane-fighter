@@ -3,12 +3,9 @@ let grid = new Array(21);
 let airplane = [{"line": 2, "col": 10}, {"line": 1, "col": 10}, {"line": 1, "col": 9}, {"line": 1, "col": 11}];
 let second = 0, minute = 0, score = 0, end = false;
 let rocks = new Array(0);
-let timer = setInterval(cntTime, 1000);
-let rockGenerator = setInterval(generateRocks, 3000);
-let rockMover = setInterval(moveRocks, 1000);
+let timer, rockGenerator, rockMover;
 
 createSpace();
-createAirplane();
 
 function createSpace() {
     for (let i = 1; i < grid.length; ++i) {
@@ -36,6 +33,23 @@ function deleteAirplane() {
     }
 }
 
+function startGame() {
+    /*We delete the rocks of the previous game, create the new airplane, allow it to move, 
+    start the timer, reset score to 0, generate the rocks and made them to fall*/
+    const rockCells = document.getElementsByClassName("rock");
+    while (rockCells.length) {
+        rockCells[0].classList.remove("rock");
+    }
+    rocks.splice(0,rocks.length);
+    createAirplane();
+    document.getElementsByClassName("pop-up")[0].style.visibility = "hidden";
+    timer = setInterval(cntTime, 1000);
+    window.addEventListener("keydown", move);
+    rockGenerator = setInterval(generateRocks, 3000);
+    rockMover = setInterval(moveRocks, 1000);
+    score = 0;
+}
+
     //We check if the key pressed is arrow
     function isArrowKey(key) {
         return (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight");
@@ -56,7 +70,7 @@ function deleteAirplane() {
         }
         return false;
     }
-         
+
 function move(e) { 
     if (isArrowKey(e.key) && !hitWall(e.key)) {
         deleteAirplane();
@@ -77,7 +91,7 @@ function move(e) {
                 ++airplane[i].col;
             }
         }
-    }
+    } 
     if (hitRock()) {
         endGame();
     } else {
@@ -138,12 +152,14 @@ function moveRocks() {
 }
 
 function endGame()  {
+    //We stop the timer and reset it to 0, stop the rocks, delete the airplane and display the Game Over pop-up
     document.getElementsByClassName("timer")[0].innerText = "00:00";
+    document.getElementsByClassName("pop-up")[0].style.visibility = "visible";
+    document.getElementsByClassName("pop-upText")[0].innerText = "GAME OVER \n \n Score: " + score;
+    document.getElementsByClassName("startGame")[0].innerText = "Start Again";
     window.removeEventListener("keydown", move);
     clearInterval(timer);
     clearInterval(rockGenerator);
     clearInterval(rockMover);
     deleteAirplane();
 }
-
-window.addEventListener("keydown", move);
