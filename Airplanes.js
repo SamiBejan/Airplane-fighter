@@ -106,7 +106,6 @@ function generateRocks() {
     for (let j = 1; j <= 3; ++j) {
         let col = Math.ceil(Math.random() * 20);
         for (let k = 1; j > 1 && k < j; ++k) {
-            console.log(rocks.length, k, j);
             while (col === rocks[rocks.length - k].col) {
                 col = Math.ceil(Math.random() * 20);
             }
