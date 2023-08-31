@@ -2,11 +2,13 @@ const area = document.querySelector(".area");
 let grid = new Array(21);
 let airplane = [{"line": 2, "col": 10}, {"line": 1, "col": 10}, {"line": 1, "col": 9}, {"line": 1, "col": 11}];
 let second = 0, minute = 0, score = 0, end = false;
-let rocks = new Array(0);
+let rocks = new Array(0), bullet = new Array(0);
 let timer, rockGenerator, rockMover;
+let bulletInd = 0;
 
 createSpace();
 
+//The game area is created
 function createSpace() {
     for (let i = 1; i < grid.length; ++i) {
         grid[i] = new Array(21);
@@ -33,31 +35,27 @@ function deleteAirplane() {
     }
 }
 
+/*We delete the rocks of the previous game, create the new airplane, allow it to move, 
+hide the pop-up, start the timer, reset score to 0, generate the rocks and made them to fall*/
 function startGame() {
-    /*We delete the rocks of the previous game, create the new airplane, allow it to move, 
-    start the timer, reset score to 0, generate the rocks and made them to fall*/
-    const rockCells = document.getElementsByClassName("rock");
-    while (rockCells.length) {
-        rockCells[0].classList.remove("rock");
-    }
-    rocks.splice(0,rocks.length);
+    deleteRocks();
     createAirplane();
     document.getElementsByClassName("pop-up")[0].style.visibility = "hidden";
     timer = setInterval(cntTime, 1000);
-    window.addEventListener("keydown", move);
+    window.addEventListener("keydown", moveOrFire);
     rockGenerator = setInterval(generateRocks, 3000);
-    rockMover = setInterval(moveRocks, 1000);
+    rockMover = setInterval(moveRocks, 400);
     score = 0;
 }
 
-    //We check if the key pressed is arrow
+    //We check if the key pressed is an arrow
     function isArrowKey(key) {
         return (key === "ArrowUp" || key === "ArrowDown" || key === "ArrowLeft" || key === "ArrowRight");
     }
 
-    //We check if the airplane go beyond the area margins
+    //We check if the airplane go beyond the area margins 
     function hitWall(key) {
-        return ((key === "ArrowUp" && airplane[0].line + 1 === 11) || (key === "ArrowDown" && airplane[1].line - 1 === 0) ||
+        return ((key === "ArrowUp" && airplane[0].line + 1 === 21) || (key === "ArrowDown" && airplane[1].line - 1 === 0) ||
         (key === "ArrowLeft" && airplane[2].col - 1 === 0) || (key === "ArrowRight" && airplane[3].col + 1 === 21));
     }
 
@@ -71,14 +69,18 @@ function startGame() {
         return false;
     }
 
-function move(e) { 
+/*If the key pressed is an arrow and the airplane remains inside the area, we move it to the new position. 
+If the Space key is pressed, a bullet is created and released. If the airplane hits a rock, the game ends*/
+function moveOrFire(e) { 
     if (isArrowKey(e.key) && !hitWall(e.key)) {
         deleteAirplane();
         if (e.key === "ArrowUp") {
+            e.preventDefault();
             for (let i = 0; i < airplane.length; ++i) {
                 ++airplane[i].line;
             }
         } else if (e.key === "ArrowDown") {
+            e.preventDefault();
             for (let i = 0; i < airplane.length; ++i) {
                 --airplane[i].line;
             }
@@ -91,7 +93,10 @@ function move(e) {
                 ++airplane[i].col;
             }
         }
-    } 
+    } else if (e.key === " " && !hitWall(e.key)) {
+        e.preventDefault();
+        createBullet(airplane[0].line, airplane[0].col);
+    }
     if (hitRock()) {
         endGame();
     } else {
@@ -99,6 +104,7 @@ function move(e) {
     } 
 }
 
+//We count the game time and make sure that the minutes and seconds are displayed with two digits
 function cntTime() {
     ++second;
     let prefixMin = "0", prefixSec = "0";
@@ -115,8 +121,8 @@ function cntTime() {
     document.querySelector(".timer").innerText = prefixMin + minute + ":" + prefixSec + second;
 }
 
+//We generate 3 new rocks on the top row of the area
 function generateRocks() {
-    //We generate 3 new rocks on the top row of the area
     for (let j = 1; j <= 3; ++j) {
         let col = Math.ceil(Math.random() * 20);
         for (let k = 1; j > 1 && k < j; ++k) {
@@ -128,38 +134,115 @@ function generateRocks() {
     }
 }
 
+/* We move the rocks by periodically lowering their positions and updating their display in the area.
+Particular cases are with the rocks entering the area from above or those leaving the area beneath. 
+If the rock hits the airplane, the game ends. If it hits a bullet, it will be distroyed alongside the bullet 
+and the score will be incremented */
 function moveRocks() {
-    /* We lower each rock's position. If it comes from above the area, we just display it on the new position.
-    If it goes beneath the area, we just remove the rock. If the rock hits the airplane, we end the game. 
-    If not any of these cases, we remove the rock and then display it on the new position */
     for (let i = 0; i < rocks.length; ++i) {
-        if (rocks[i].line != 21) {
+        if (rocks[i].line != 21 ) {
             grid[rocks[i].line][rocks[i].col].classList.remove("rock"); 
         }
         --rocks[i].line; 
         if (rocks[i].line === 0) {    
-            rocks.shift();
+            rocks.splice(i, 1);
             --i;
-            ++score;
-            document.getElementsByClassName("score")[0].innerText = "Score\n" + score;
         } else if (grid[rocks[i].line][rocks[i].col].classList.contains("airplane")) {
             grid[rocks[i].line][rocks[i].col].classList.add("rock"); 
             endGame();
+        } else if (grid[rocks[i].line][rocks[i].col].classList.contains("bullet")) {
+            grid[rocks[i].line][rocks[i].col].classList.remove("bullet"); 
+            for (let j = 0; j < bullet.length; ++j) {
+                if (bullet[j].line === rocks[i].line && bullet[j].col === rocks[i].col) {
+                    stopBullet(j);
+                    --j;
+                }
+            }
+            if (bulletInd >= bullet.length) {
+                bulletInd = 0;
+            }
+            rocks.splice(i, 1);
+            --i;
+            incrementScore();
         } else {
             grid[rocks[i].line][rocks[i].col].classList.add("rock"); 
         }
     }
 }
 
+//A new bullet is generated and released
+function createBullet(x, y) {
+    bullet.unshift({"line": x, "col": y, "fire": setInterval(moveBullet, 50)});
+}
+
+/*The bullets are moved by periodically increasing their position and updating their display in the area.
+If a bullet hits a rock, it will be distroyed alongside the rock and the score will be incremented*/
+function moveBullet() {
+    grid[bullet[bulletInd].line][bullet[bulletInd].col].classList.remove("bullet");
+    ++bullet[bulletInd].line;
+    if (bullet[bulletInd].line <= 20 && !grid[bullet[bulletInd].line][bullet[bulletInd].col].classList.contains("rock")) {
+        grid[bullet[bulletInd].line][bullet[bulletInd].col].classList.add("bullet");
+    } else if (bullet[bulletInd].line <= 20 && grid[bullet[bulletInd].line][bullet[bulletInd].col].classList.contains("rock")) {
+        grid[bullet[bulletInd].line][bullet[bulletInd].col].classList.remove("rock");
+        for (let j = 0; j < rocks.length; ++j) {
+            if (bullet[bulletInd].line === rocks[j].line && bullet[bulletInd].col === rocks[j].col) {
+                rocks.splice(j, 1);
+                --j;
+            } 
+        }
+        incrementScore();
+        stopBullet(bulletInd);
+        --bulletInd;
+    } else {
+        stopBullet(bulletInd);
+        --bulletInd;
+    }
+    ++bulletInd;
+    if (bulletInd >= bullet.length) {
+        bulletInd = 0;
+    }
+}
+    
+//The bullet is stopped and deleted
+function stopBullet(x) {
+    clearInterval(bullet[x].fire);
+    bullet.splice(x, 1);
+}
+
+function incrementScore() {
+    ++score;
+    document.getElementsByClassName("score")[0].innerText = "Score\n" + score;
+}
+
+//All bullets are stopped and deleted
+function deleteBullets() {
+    while (bullet.length) {
+        grid[bullet[0].line][bullet[0].col].classList.remove("bullet");
+        clearInterval(bullet[0].fire);
+        bullet.shift();
+    }
+}
+
+//All rocks are deleted
+function deleteRocks() {
+    const rockCells = document.getElementsByClassName("rock");
+    while (rockCells.length) {
+        rockCells[0].classList.remove("rock");
+    }
+    rocks.splice(0, rocks.length);
+}
+
+/*The timer is stopped and reset to 0, the rocks are stopped, the airplane and bullets are deleted
+and the Game Over pop-up is displayed*/
 function endGame()  {
-    //We stop the timer and reset it to 0, stop the rocks, delete the airplane and display the Game Over pop-up
     document.getElementsByClassName("timer")[0].innerText = "00:00";
     document.getElementsByClassName("pop-up")[0].style.visibility = "visible";
     document.getElementsByClassName("pop-upText")[0].innerText = "GAME OVER \n \n Score: " + score;
     document.getElementsByClassName("startGame")[0].innerText = "Start Again";
-    window.removeEventListener("keydown", move);
+    window.removeEventListener("keydown", moveOrFire);
+    deleteBullets();
+    deleteAirplane();
     clearInterval(timer);
     clearInterval(rockGenerator);
     clearInterval(rockMover);
-    deleteAirplane();
 }
